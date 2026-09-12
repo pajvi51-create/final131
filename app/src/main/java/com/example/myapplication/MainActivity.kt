@@ -57,8 +57,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -277,15 +284,8 @@ private fun MapScreen() {
 
         Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), elevation = CardDefaults.cardElevation(5.dp)) {
             Column {
-                Box(
-                    Modifier.fillMaxWidth().height(250.dp).background(MaterialTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("🗺️", style = MaterialTheme.typography.displaySmall)
-                        Text("Google Maps", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-                        Text("เปิดดูชื่อสถานที่ ถนน และจุดสำคัญรอบพิกัด", color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
+                Box(Modifier.fillMaxWidth().height(320.dp).background(MaterialTheme.colorScheme.secondaryContainer)) {
+                    OpenStreetMap(mapLatitude, mapLongitude)
                 }
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("ดาวที่เลือก", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -301,6 +301,52 @@ private fun MapScreen() {
         }
         Spacer(Modifier.height(4.dp))
     }
+}
+
+@Composable
+private fun OpenStreetMap(latitude: String, longitude: String) {
+    val lat = latitude.toDouble()
+    val lng = longitude.toDouble()
+    val key = "$lat,$lng"
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { context ->
+            Configuration.getInstance().userAgentValue = context.packageName
+            MapView(context).apply {
+                setTileSource(TileSourceFactory.MAPNIK)
+                setMultiTouchControls(true)
+                minZoomLevel = 3.0
+                maxZoomLevel = 20.0
+                controller.setZoom(16.0)
+                controller.setCenter(GeoPoint(lat, lng))
+                overlays.add(Marker(this).apply {
+                    position = GeoPoint(lat, lng)
+                    title = "พิกัดที่เลือก"
+                    snippet = "$lat, $lng"
+                    icon = ContextCompat.getDrawable(context, R.drawable.ic_toy_map_pin)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                })
+                tag = key
+            }
+        },
+        update = { mapView ->
+            if (mapView.tag != key) {
+                val point = GeoPoint(lat, lng)
+                mapView.tag = key
+                mapView.controller.setCenter(point)
+                mapView.overlays.clear()
+                mapView.overlays.add(Marker(mapView).apply {
+                    position = point
+                    title = "พิกัดที่เลือก"
+                    snippet = "$lat, $lng"
+                    icon = ContextCompat.getDrawable(mapView.context, R.drawable.ic_toy_map_pin)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                })
+                mapView.invalidate()
+            }
+        }
+    )
 }
 
 @Composable
