@@ -60,12 +60,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.util.Locale
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.floor
-import kotlin.math.ln
-import kotlin.math.pow
-import kotlin.math.tan
 
 class MainActivity : ComponentActivity() {
     private val lifecycleTag = "MidtermLifecycle"
@@ -330,41 +324,34 @@ private fun CoordinateForm(
 private fun EmbeddedMap(latitude: String, longitude: String) {
     val lat = latitude.toDouble()
     val lng = longitude.toDouble()
-    val zoom = 15
-    val scale = 2.0.pow(zoom)
-    val latitudeRadians = lat.coerceIn(-85.0511, 85.0511) * PI / 180.0
-    val tileX = (lng + 180.0) / 360.0 * scale
-    val tileY = (1.0 - ln(tan(latitudeRadians) + 1.0 / cos(latitudeRadians)) / PI) / 2.0 * scale
-    val centerTileX = floor(tileX).toInt()
-    val centerTileY = floor(tileY).toInt()
-    val tiles = buildString {
-        for (y in centerTileY - 1..centerTileY + 1) {
-            for (x in centerTileX - 1..centerTileX + 1) {
-                val left = (x - tileX) * 256.0
-                val top = (y - tileY) * 256.0
-                append("<img class='tile' src='https://tile.openstreetmap.org/$zoom/$x/$y.png' style='left:calc(50% + ${left}px);top:calc(50% + ${top}px)'>")
-            }
-        }
-    }
     val html = """
         <!doctype html>
         <html>
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+            <link rel="stylesheet" href="leaflet/leaflet.css">
             <style>
-              html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#e8eef0}
-              .tile{position:absolute;width:256px;height:256px;max-width:none}
-              .marker{position:absolute;left:50%;top:50%;width:24px;height:24px;
-                margin:-24px 0 0 -12px;background:#d93025;border:3px solid white;
-                border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-                box-shadow:0 2px 6px #555}
-              .marker:after{content:'';position:absolute;width:8px;height:8px;left:5px;top:5px;
-                background:white;border-radius:50%}
-              .credit{position:absolute;right:4px;bottom:3px;background:rgba(255,255,255,.85);
-                color:#333;font:10px sans-serif;padding:2px 4px;border-radius:3px}
+              html,body{width:100%;height:100%;margin:0;background:#e8eef0}
+              #map{position:fixed;inset:0;width:100vw;height:100vh}
             </style>
           </head>
-          <body>$tiles<div class="marker"></div><div class="credit">© OpenStreetMap contributors</div></body>
+          <body>
+            <div id="map"></div>
+            <script src="leaflet/leaflet.js"></script>
+            <script>
+              const position = [$lat, $lng];
+              const mapElement = document.getElementById('map');
+              mapElement.style.width = window.innerWidth + 'px';
+              mapElement.style.height = window.innerHeight + 'px';
+              const map = L.map('map', { zoomControl: true }).setView(position, 16);
+              L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+              }).addTo(map);
+              L.marker(position).addTo(map).bindPopup('$lat, $lng');
+              setTimeout(() => map.invalidateSize(), 250);
+            </script>
+          </body>
         </html>
     """.trimIndent()
     val mapKey = "$lat,$lng"
@@ -373,17 +360,23 @@ private fun EmbeddedMap(latitude: String, longitude: String) {
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
-                webViewClient = WebViewClient()
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String?) {
+                        view.postDelayed({
+                            view.evaluateJavascript("map.invalidateSize(true); map.setView(position, 16)", null)
+                        }, 750)
+                    }
+                }
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 tag = mapKey
-                loadDataWithBaseURL("https://maps.google.com", html, "text/html", "UTF-8", null)
+                loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null)
             }
         },
         update = { webView ->
             if (webView.tag != mapKey) {
                 webView.tag = mapKey
-                webView.loadDataWithBaseURL("https://maps.google.com", html, "text/html", "UTF-8", null)
+                webView.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null)
             }
         }
     )
