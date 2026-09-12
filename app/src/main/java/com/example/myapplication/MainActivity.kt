@@ -32,7 +32,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -255,7 +254,7 @@ private fun MapScreen() {
         },
         onOpenExternalMap = {
             validatedCoordinates()?.let { (lat, lng) ->
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng?q=$lat,$lng"))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng"))
                 if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
                 else Toast.makeText(context.applicationContext, "ไม่พบแอปแผนที่ภายนอก", Toast.LENGTH_SHORT).show()
             }
@@ -341,7 +340,7 @@ private fun CoordinateForm(
                         Text("$mapLatitude, $mapLongitude", fontWeight = FontWeight.Bold)
                         Text("ลากเพื่อเลื่อน · ใช้ +/− เพื่อซูม", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    OutlinedButton(onClick = onOpenExternalMap) { Text("เปิดภายนอก") }
+                    Button(onClick = onOpenExternalMap) { Text("เปิดแอปแผนที่") }
                 }
             }
         }
