@@ -189,8 +189,30 @@ private fun LifecycleScreen() {
                         fontWeight = FontWeight.Medium
                     )
                 }
+                Spacer(Modifier.height(18.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LifecycleDetail("onCreate()", "สร้าง Activity และเตรียมหน้าจอ Compose")
+                    LifecycleDetail("onStart()", "หน้าจอเริ่มปรากฏให้ผู้ใช้เห็น")
+                    LifecycleDetail("onResume()", "หน้าจอพร้อมรับการโต้ตอบจากผู้ใช้")
+                    LifecycleDetail("onPause()", "หน้าจอเสียโฟกัสหรือถูกบังบางส่วน")
+                    LifecycleDetail("onStop()", "หน้าจอไม่ปรากฏให้ผู้ใช้เห็น")
+                    LifecycleDetail("onDestroy()", "Activity ถูกทำลายหรือสร้างใหม่หลังหมุนจอ")
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun LifecycleDetail(method: String, description: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            method,
+            modifier = Modifier.weight(0.38f),
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+        Text(description, modifier = Modifier.weight(0.62f), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -288,6 +310,12 @@ private fun CoordinateForm(
                 }
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = onShowMap, modifier = Modifier.fillMaxWidth()) { Text("แสดงตำแหน่งบนแผนที่") }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Latitude ต้องอยู่ระหว่าง −90 ถึง 90 และ Longitude ระหว่าง −180 ถึง 180",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
         Spacer(Modifier.height(16.dp))
@@ -311,6 +339,7 @@ private fun CoordinateForm(
                     Column(Modifier.weight(1f)) {
                         Text("ตำแหน่งปัจจุบัน", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("$mapLatitude, $mapLongitude", fontWeight = FontWeight.Bold)
+                        Text("ลากเพื่อเลื่อน · ใช้ +/− เพื่อซูม", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     OutlinedButton(onClick = onOpenExternalMap) { Text("เปิดภายนอก") }
                 }
@@ -437,11 +466,25 @@ private fun InstallmentScreen(vm: InstallmentViewModel = viewModel()) {
             ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("สรุปยอดชำระ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "คำนวณด้วยดอกเบี้ยคงที่จากเงินต้น ${money(state.price.toDoubleOrNull() ?: 0.0)} บาท",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Text("ค่างวดต่อเดือน", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${money(result.monthlyPayment)} บาท", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     HorizontalDivider()
+                    ResultRow("ราคาสินค้า (เงินต้น)", "${money(state.price.toDoubleOrNull() ?: 0.0)} บาท")
+                    ResultRow("อัตราดอกเบี้ยต่อเดือน", "${formatOneDecimal(state.monthlyRate)}%")
+                    ResultRow("ระยะเวลาผ่อน", "${state.months} เดือน")
                     ResultRow("ยอดรวมที่ต้องจ่าย", "${money(result.totalPayment)} บาท")
                     ResultRow("ดอกเบี้ยทั้งหมด", "${money(result.totalInterest)} บาท")
+                    HorizontalDivider()
+                    Text(
+                        "สูตร: ดอกเบี้ย = เงินต้น × อัตราดอกเบี้ยต่อเดือน × จำนวนเดือน",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
