@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -28,16 +29,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -61,80 +65,65 @@ import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
-    private val lifecycleTag = "MidtermLifecycle"
+    private val lifecycleTag = "ToySpaceLifecycle"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        showLifecycleToast("onCreate()")
+        showLifecycle("onCreate()")
         enableEdgeToEdge()
-        setContent { MyApplicationTheme { MidtermApp() } }
+        setContent { MyApplicationTheme { ToySpaceApp() } }
     }
 
-    override fun onStart() {
-        super.onStart()
-        showLifecycleToast("onStart()")
-    }
+    override fun onStart() { super.onStart(); showLifecycle("onStart()") }
+    override fun onResume() { super.onResume(); showLifecycle("onResume()") }
+    override fun onPause() { showLifecycle("onPause()"); super.onPause() }
+    override fun onStop() { showLifecycle("onStop()"); super.onStop() }
+    override fun onDestroy() { showLifecycle("onDestroy()"); super.onDestroy() }
 
-    override fun onResume() {
-        super.onResume()
-        showLifecycleToast("onResume()")
-    }
-
-    override fun onPause() {
-        showLifecycleToast("onPause()")
-        super.onPause()
-    }
-
-    override fun onStop() {
-        showLifecycleToast("onStop()")
-        super.onStop()
-    }
-
-    override fun onDestroy() {
-        showLifecycleToast("onDestroy()")
-        super.onDestroy()
-    }
-
-    private fun showLifecycleToast(methodName: String) {
-        Log.d(lifecycleTag, methodName)
-        Toast.makeText(applicationContext, methodName, Toast.LENGTH_SHORT).show()
+    private fun showLifecycle(name: String) {
+        Log.d(lifecycleTag, name)
+        Toast.makeText(applicationContext, name, Toast.LENGTH_SHORT).show()
     }
 }
 
-@Composable
-private fun MidtermApp() {
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf("Lifecycle", "แผนที่", "ค่างวด")
+private data class Destination(val icon: String, val label: String)
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(innerPadding)) {
-            Surface(color = MaterialTheme.colorScheme.primaryContainer) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-                    Text(
-                        "ANDROID MODERN",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
+@Composable
+private fun ToySpaceApp() {
+    var selected by rememberSaveable { mutableIntStateOf(0) }
+    val destinations = listOf(
+        Destination("🚀", "ภารกิจ"),
+        Destination("📍", "แผนที่"),
+        Destination("🧮", "ค่างวด")
+    )
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            NavigationBar(
+                modifier = Modifier.navigationBarsPadding(),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 10.dp
+            ) {
+                destinations.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        selected = selected == index,
+                        onClick = { selected = index },
+                        icon = { Text(item.icon, style = MaterialTheme.typography.titleLarge) },
+                        label = { Text(item.label, fontWeight = FontWeight.Bold) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     )
-                    Text(
-                        "Midterm Workspace",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text("Lifecycle · State Hoisting · MVVM", style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) }
-                    )
-                }
-            }
-            when (selectedTab) {
-                0 -> LifecycleScreen()
+        }
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            when (selected) {
+                0 -> MissionScreen()
                 1 -> MapScreen()
                 else -> InstallmentScreen()
             }
@@ -143,79 +132,102 @@ private fun MidtermApp() {
 }
 
 @Composable
-private fun ScreenTitle(number: String, title: String, subtitle: String) {
-    Column(Modifier.fillMaxWidth()) {
-        Text(number, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(4.dp))
+private fun PageHeader(kicker: String, title: String, subtitle: String) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(50)) {
+            Text(kicker, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.labelLarge)
+        }
+        Text(title, style = MaterialTheme.typography.headlineMedium)
         Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
 @Composable
-private fun LifecycleScreen() {
+private fun ToyCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) { content() }
+}
+
+@Composable
+private fun MissionScreen() {
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        ScreenTitle("ข้อ 1", "Activity Lifecycle", "ติดตามวงจรชีวิตของหน้าจอผ่าน Toast และ Logcat")
-        Spacer(Modifier.height(20.dp))
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            elevation = CardDefaults.cardElevation(3.dp)
-        ) {
-            Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Surface(Modifier.size(44.dp), color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(14.dp)) {
+                Box(contentAlignment = Alignment.Center) { Text("★", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleLarge) }
+            }
+            Column {
+                Text("TOY SPACE LAB", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                Text("พร้อมออกสำรวจ!", style = MaterialTheme.typography.titleLarge)
+            }
+        }
+
+        Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+            Column {
                 Image(
-                    painter = painterResource(R.drawable.student_photo),
-                    contentDescription = "ภาพถ่ายนักศึกษา",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(210.dp).clip(CircleShape)
+                    painter = painterResource(R.drawable.toy_space_hero),
+                    contentDescription = "จรวดของเล่นและหมวกนักบินอวกาศ",
+                    modifier = Modifier.fillMaxWidth().height(220.dp),
+                    contentScale = ContentScale.Crop
                 )
-                Spacer(Modifier.height(18.dp))
-                Text("กฤษฎา ศรีคิลิน", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("รหัสนักศึกษา 67102122111", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(18.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(18.dp))
-                Text("ลองหมุนหน้าจอเพื่อดู Lifecycle ทำงาน", textAlign = TextAlign.Center)
-                Spacer(Modifier.height(12.dp))
-                Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(16.dp)) {
-                    Text(
-                        "onCreate → onStart → onResume\nonPause → onStop → onDestroy",
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Spacer(Modifier.height(18.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LifecycleDetail("onCreate()", "สร้าง Activity และเตรียมหน้าจอ Compose")
-                    LifecycleDetail("onStart()", "หน้าจอเริ่มปรากฏให้ผู้ใช้เห็น")
-                    LifecycleDetail("onResume()", "หน้าจอพร้อมรับการโต้ตอบจากผู้ใช้")
-                    LifecycleDetail("onPause()", "หน้าจอเสียโฟกัสหรือถูกบังบางส่วน")
-                    LifecycleDetail("onStop()", "หน้าจอไม่ปรากฏให้ผู้ใช้เห็น")
-                    LifecycleDetail("onDestroy()", "Activity ถูกทำลายหรือสร้างใหม่หลังหมุนจอ")
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("ภารกิจ Android", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                    Text("เรียนรู้ทุกวงโคจร", style = MaterialTheme.typography.headlineSmall)
+                    Text("สำรวจ Lifecycle, พิกัด และการคำนวณ ผ่านห้องทดลองของเล่นอวกาศ", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
+
+        PageHeader("MISSION 01", "วงโคจรของ Activity", "หมุนหน้าจอหรือสลับแอป แล้วสังเกต Toast และ Logcat")
+        ToyCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Image(
+                        painter = painterResource(R.drawable.student_photo),
+                        contentDescription = "ภาพนักศึกษา",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(76.dp).clip(CircleShape)
+                    )
+                    Column {
+                        Text("กฤษฎา ศรีคิลิน", style = MaterialTheme.typography.titleLarge)
+                        Text("รหัส 67102122111", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer)
+                val stages = listOf(
+                    "01" to ("onCreate()" to "ประกอบยานและเตรียม UI"),
+                    "02" to ("onStart()" to "ยานเริ่มปรากฏบนหน้าจอ"),
+                    "03" to ("onResume()" to "พร้อมรับคำสั่งจากนักบิน"),
+                    "04" to ("onPause()" to "เสียโฟกัสชั่วคราว"),
+                    "05" to ("onStop()" to "ออกจากจอของผู้ใช้"),
+                    "06" to ("onDestroy()" to "ถอดประกอบ Activity")
+                )
+                stages.forEach { (number, detail) -> LifecycleStage(number, detail.first, detail.second) }
+            }
+        }
+        Spacer(Modifier.height(4.dp))
     }
 }
 
 @Composable
-private fun LifecycleDetail(method: String, description: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            method,
-            modifier = Modifier.weight(0.38f),
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
-        Text(description, modifier = Modifier.weight(0.62f), style = MaterialTheme.typography.bodyMedium)
+private fun LifecycleStage(number: String, method: String, description: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(Modifier.size(42.dp), color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(14.dp)) {
+            Box(contentAlignment = Alignment.Center) { Text(number, color = MaterialTheme.colorScheme.onSecondaryContainer, fontWeight = FontWeight.Black) }
+        }
+        Column(Modifier.weight(1f)) {
+            Text(method, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
-/** Stateful composable: owns saveable input and map state. */
 @Composable
 private fun MapScreen() {
     var latitude by rememberSaveable { mutableStateOf("") }
@@ -224,128 +236,68 @@ private fun MapScreen() {
     var mapLongitude by rememberSaveable { mutableStateOf("104.0914") }
     val context = LocalContext.current
 
-    fun validatedCoordinates(): Pair<Double, Double>? {
+    fun coordinates(): Pair<Double, Double>? {
         val lat = latitude.toDoubleOrNull()
         val lng = longitude.toDoubleOrNull()
-        val message = when {
-            lat == null || lng == null -> "กรุณากรอก Latitude และ Longitude ให้ครบถ้วน"
-            lat !in -90.0..90.0 || lng !in -180.0..180.0 -> "ค่าพิกัดไม่ถูกต้อง"
+        val error = when {
+            lat == null || lng == null -> "กรอกพิกัดให้ครบทั้งสองช่อง"
+            lat !in -90.0..90.0 || lng !in -180.0..180.0 -> "พิกัดอยู่นอกช่วงที่กำหนด"
             else -> null
         }
-        if (message != null) {
-            Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
-            return null
-        }
-        return lat!! to lng!!
+        if (error != null) Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+        return if (error == null) lat!! to lng!! else null
     }
 
-    CoordinateForm(
-        latitude = latitude,
-        longitude = longitude,
-        mapLatitude = mapLatitude,
-        mapLongitude = mapLongitude,
-        onLatitudeChange = { latitude = it },
-        onLongitudeChange = { longitude = it },
-        onShowMap = {
-            validatedCoordinates()?.let { (lat, lng) ->
-                mapLatitude = lat.toString()
-                mapLongitude = lng.toString()
-            }
-        },
-        onOpenExternalMap = {
-            validatedCoordinates()?.let { (lat, lng) ->
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng"))
-                if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
-                else Toast.makeText(context.applicationContext, "ไม่พบแอปแผนที่ภายนอก", Toast.LENGTH_SHORT).show()
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        PageHeader("MISSION 02 • 📍", "ค้นหาดาวปลายทาง", "ระบุ Latitude และ Longitude เพื่อปักหมุดพิกัดที่ต้องการ")
+        ToyCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("พิกัดปลายทาง", style = MaterialTheme.typography.titleLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CoordinateField(latitude, { latitude = it }, "Latitude", "17.1899", Modifier.weight(1f))
+                    CoordinateField(longitude, { longitude = it }, "Longitude", "104.0914", Modifier.weight(1f))
+                }
+                Button(
+                    onClick = { coordinates()?.let { (lat, lng) -> mapLatitude = lat.toString(); mapLongitude = lng.toString() } },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(17.dp)
+                ) { Text("🚀  เดินทางไปยังพิกัด") }
+                Text("Latitude −90 ถึง 90  •  Longitude −180 ถึง 180", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-    )
+
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), elevation = CardDefaults.cardElevation(5.dp)) {
+            Column {
+                Box(Modifier.fillMaxWidth().height(320.dp).background(MaterialTheme.colorScheme.surfaceVariant)) { EmbeddedMap(mapLatitude, mapLongitude) }
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("ดาวที่เลือก", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text("$mapLatitude, $mapLongitude", style = MaterialTheme.typography.titleLarge)
+                    OutlinedButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$mapLatitude,$mapLongitude?q=$mapLatitude,$mapLongitude"))
+                            if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
+                            else Toast.makeText(context, "ไม่พบแอปแผนที่", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)
+                    ) { Text("เปิดด้วยแอปแผนที่") }
+                }
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+    }
 }
 
-/** Stateless composable: renders values and sends events upward only. */
 @Composable
-private fun CoordinateForm(
-    latitude: String,
-    longitude: String,
-    mapLatitude: String,
-    mapLongitude: String,
-    onLatitudeChange: (String) -> Unit,
-    onLongitudeChange: (String) -> Unit,
-    onShowMap: () -> Unit,
-    onOpenExternalMap: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        ScreenTitle("ข้อ 2", "ค้นหาพิกัด", "ปักหมุดและดูแผนที่ได้ภายในแอป")
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            elevation = CardDefaults.cardElevation(2.dp)
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = latitude,
-                        onValueChange = onLatitudeChange,
-                        label = { Text("Latitude") },
-                        placeholder = { Text("17.1899") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = longitude,
-                        onValueChange = onLongitudeChange,
-                        label = { Text("Longitude") },
-                        placeholder = { Text("104.0914") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                Button(onClick = onShowMap, modifier = Modifier.fillMaxWidth()) { Text("แสดงตำแหน่งบนแผนที่") }
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Latitude ต้องอยู่ระหว่าง −90 ถึง 90 และ Longitude ระหว่าง −180 ถึง 180",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(310.dp).background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    EmbeddedMap(mapLatitude, mapLongitude)
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("ตำแหน่งปัจจุบัน", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$mapLatitude, $mapLongitude", fontWeight = FontWeight.Bold)
-                        Text("ลากเพื่อเลื่อน · ใช้ +/− เพื่อซูม", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Button(onClick = onOpenExternalMap) { Text("เปิดแอปแผนที่") }
-                }
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-    }
+private fun CoordinateField(value: String, onValueChange: (String) -> Unit, label: String, placeholder: String, modifier: Modifier) {
+    OutlinedTextField(
+        value = value, onValueChange = onValueChange,
+        label = { Text(label) }, placeholder = { Text(placeholder) },
+        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        shape = RoundedCornerShape(18.dp), modifier = modifier
+    )
 }
 
 @Composable
@@ -353,151 +305,104 @@ private fun EmbeddedMap(latitude: String, longitude: String) {
     val lat = latitude.toDouble()
     val lng = longitude.toDouble()
     val html = """
-        <!doctype html>
-        <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-            <link rel="stylesheet" href="leaflet/leaflet.css">
-            <style>
-              html,body{width:100%;height:100%;margin:0;background:#e8eef0}
-              #map{position:fixed;inset:0;width:100vw;height:100vh}
-            </style>
-          </head>
-          <body>
-            <div id="map"></div>
-            <script src="leaflet/leaflet.js"></script>
-            <script>
-              const position = [$lat, $lng];
-              const mapElement = document.getElementById('map');
-              mapElement.style.width = window.innerWidth + 'px';
-              mapElement.style.height = window.innerHeight + 'px';
-              const map = L.map('map', { zoomControl: true }).setView(position, 16);
-              L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-              }).addTo(map);
-              L.marker(position).addTo(map).bindPopup('$lat, $lng');
-              setTimeout(() => map.invalidateSize(), 250);
-            </script>
-          </body>
-        </html>
+        <!doctype html><html><head>
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        <link rel="stylesheet" href="leaflet/leaflet.css">
+        <style>html,body,#map{width:100%;height:100%;margin:0;background:#f4edff}.leaflet-control-zoom a{color:#5b2aae!important}</style>
+        </head><body><div id="map"></div><script src="leaflet/leaflet.js"></script><script>
+        const position=[$lat,$lng];const map=L.map('map').setView(position,16);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+        L.marker(position).addTo(map).bindPopup('ดาวปลายทาง<br>$lat, $lng').openPopup();
+        setTimeout(()=>map.invalidateSize(),250);</script></body></html>
     """.trimIndent()
-    val mapKey = "$lat,$lng"
-
+    val key = "$lat,$lng"
     AndroidView(
         modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            WebView(context).apply {
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView, url: String?) {
-                        view.postDelayed({
-                            view.evaluateJavascript("map.invalidateSize(true); map.setView(position, 16)", null)
-                        }, 750)
-                    }
-                }
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                tag = mapKey
-                loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null)
-            }
-        },
-        update = { webView ->
-            if (webView.tag != mapKey) {
-                webView.tag = mapKey
-                webView.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null)
-            }
-        }
+        factory = { context -> WebView(context).apply {
+            webViewClient = object : WebViewClient() { override fun onPageFinished(view: WebView, url: String?) { view.postDelayed({ view.evaluateJavascript("map.invalidateSize(true)", null) }, 500) } }
+            settings.javaScriptEnabled = true; settings.domStorageEnabled = true; tag = key
+            loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null)
+        } },
+        update = { if (it.tag != key) { it.tag = key; it.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null) } }
     )
 }
 
-/** View layer: all installment state and calculations are delegated to the ViewModel. */
 @Composable
 private fun InstallmentScreen(vm: InstallmentViewModel = viewModel()) {
     val state = vm.uiState
     val context = LocalContext.current
-
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        ScreenTitle("ข้อ 3", "เครื่องคำนวณค่างวด", "วางแผนยอดผ่อนแบบดอกเบี้ยคงที่ด้วย MVVM")
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            elevation = CardDefaults.cardElevation(2.dp)
-        ) {
-            Column(Modifier.padding(18.dp)) {
+        PageHeader("MISSION 03 • 🧮", "วางแผนซื้อของเล่น", "คำนวณค่างวดแบบดอกเบี้ยคงที่ก่อนตัดสินใจ")
+        ToyCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 OutlinedTextField(
-                    value = state.price,
-                    onValueChange = vm::setPrice,
-                    label = { Text("ราคาสินค้า") },
-                    suffix = { Text("บาท") },
-                    placeholder = { Text("เช่น 12000") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth()
+                    value = state.price, onValueChange = vm::setPrice,
+                    label = { Text("ราคาสินค้า") }, placeholder = { Text("เช่น 12,000") }, suffix = { Text("บาท") },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(20.dp))
-                Text("อัตราดอกเบี้ยต่อเดือน", style = MaterialTheme.typography.labelLarge)
-                Text("${formatOneDecimal(state.monthlyRate)}%", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Slider(value = state.monthlyRate, onValueChange = vm::setRate, valueRange = 0f..5f, steps = 49)
-                Spacer(Modifier.height(8.dp))
-                Text("ระยะเวลาผ่อน", style = MaterialTheme.typography.labelLarge)
-                Text("${state.months} เดือน", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Slider(value = state.months.toFloat(), onValueChange = { vm.setMonths(it.toInt()) }, valueRange = 1f..36f, steps = 34)
-                Spacer(Modifier.height(12.dp))
+                ValueControl("ดอกเบี้ยต่อเดือน", "${oneDecimal(state.monthlyRate)}%", "0%", "5%") {
+                    Slider(state.monthlyRate, vm::setRate, valueRange = 0f..5f, steps = 49)
+                }
+                ValueControl("ระยะเวลาผ่อน", "${state.months} เดือน", "1 เดือน", "36 เดือน") {
+                    Slider(state.months.toFloat(), { vm.setMonths(it.toInt()) }, valueRange = 1f..36f, steps = 34)
+                }
                 Button(
-                    onClick = {
-                        if (!vm.calculate()) Toast.makeText(context.applicationContext, "กรุณากรอกราคาสินค้าให้ถูกต้อง", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("คำนวณค่างวด") }
+                    onClick = { if (!vm.calculate()) Toast.makeText(context, "กรอกราคาสินค้าให้ถูกต้อง", Toast.LENGTH_SHORT).show() },
+                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(17.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary)
+                ) { Text("★  คำนวณแผนการผ่อน") }
             }
         }
+
         state.result?.let { result ->
-            Spacer(Modifier.height(16.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("สรุปยอดชำระ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(
-                        "คำนวณด้วยดอกเบี้ยคงที่จากเงินต้น ${money(state.price.toDoubleOrNull() ?: 0.0)} บาท",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text("ค่างวดต่อเดือน", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${money(result.monthlyPayment)} บาท", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("สรุปแผนของคุณ", style = MaterialTheme.typography.titleLarge)
+                    Text("จ่ายต่อเดือน", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${money(result.monthlyPayment)} บาท", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                     HorizontalDivider()
-                    ResultRow("ราคาสินค้า (เงินต้น)", "${money(state.price.toDoubleOrNull() ?: 0.0)} บาท")
-                    ResultRow("อัตราดอกเบี้ยต่อเดือน", "${formatOneDecimal(state.monthlyRate)}%")
-                    ResultRow("ระยะเวลาผ่อน", "${state.months} เดือน")
-                    ResultRow("ยอดรวมที่ต้องจ่าย", "${money(result.totalPayment)} บาท")
-                    ResultRow("ดอกเบี้ยทั้งหมด", "${money(result.totalInterest)} บาท")
-                    HorizontalDivider()
-                    Text(
-                        "สูตร: ดอกเบี้ย = เงินต้น × อัตราดอกเบี้ยต่อเดือน × จำนวนเดือน",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    ResultRow("ราคาสินค้า", "${money(state.price.toDoubleOrNull() ?: 0.0)} บาท")
+                    ResultRow("ดอกเบี้ย", "${oneDecimal(state.monthlyRate)}% / เดือน")
+                    ResultRow("จำนวนงวด", "${state.months} เดือน")
+                    ResultRow("ดอกเบี้ยรวม", "${money(result.totalInterest)} บาท")
+                    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(18.dp)) {
+                        ResultRow("ยอดชำระทั้งหมด", "${money(result.totalPayment)} บาท", Modifier.padding(16.dp))
+                    }
                 }
             }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(4.dp))
     }
 }
 
 @Composable
-private fun ResultRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label)
-        Text(value, fontWeight = FontWeight.Bold)
+private fun ValueControl(label: String, value: String, min: String, max: String, slider: @Composable () -> Unit) {
+    Column {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.titleMedium)
+            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp)) {
+                Text(value, modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
+        }
+        slider()
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(min, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(max, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
-private fun formatOneDecimal(value: Float) = String.format(Locale.US, "%.1f", value)
+@Composable
+private fun ResultRow(label: String, value: String, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+    }
+}
+
+private fun oneDecimal(value: Float) = String.format(Locale.US, "%.1f", value)
 private fun money(value: Double) = String.format(Locale.US, "%,.2f", value)

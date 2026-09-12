@@ -1,58 +1,35 @@
 package com.example.myapplication.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Teal80,
-    secondary = Sky80,
-    tertiary = Amber80
+private val LightColors = lightColorScheme(
+    primary = SpacePurple, onPrimary = CloudWhite,
+    primaryContainer = Lavender, onPrimaryContainer = SpacePurpleDark,
+    secondary = ToyGreenDark, onSecondary = CloudWhite,
+    secondaryContainer = Color(0xFFE2F5B8), onSecondaryContainer = Color(0xFF173800),
+    tertiary = ToyGreen,
+    background = CloudWhite, onBackground = Ink,
+    surface = CloudWhite, onSurface = Ink,
+    surfaceVariant = SoftLilac, onSurfaceVariant = MutedInk,
+    outline = Color(0xFF817586)
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Teal40,
-    secondary = Sky40,
-    tertiary = Amber40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFFD4B8FF), onPrimary = SpacePurpleDark,
+    primaryContainer = SpacePurple,
+    secondary = Color(0xFFB6ED65), onSecondary = Color(0xFF173800),
+    secondaryContainer = ToyGreenDark,
+    background = NightSurface, onBackground = CloudWhite,
+    surface = NightCard, onSurface = CloudWhite,
+    surfaceVariant = Color(0xFF352943), onSurfaceVariant = Color(0xFFD2C4DC)
 )
 
 @Composable
-fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+fun MyApplicationTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, typography = Typography, content = content)
 }
