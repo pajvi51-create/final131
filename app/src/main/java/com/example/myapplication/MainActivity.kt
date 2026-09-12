@@ -63,6 +63,11 @@ class MainActivity : ComponentActivity() {
         showLifecycleToast("onStart()")
     }
 
+    override fun onResume() {
+        super.onResume()
+        showLifecycleToast("onResume()")
+    }
+
     private fun showLifecycleToast(methodName: String) {
         Toast.makeText(applicationContext, methodName, Toast.LENGTH_SHORT).show()
     }
