@@ -4,13 +4,18 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,16 +24,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,9 +56,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.tan
 
 class MainActivity : ComponentActivity() {
     private val lifecycleTag = "MidtermLifecycle"
@@ -95,22 +111,32 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MidtermApp() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf("Lifecycle", "แผนที่", "ค่างวด MVVM")
+    val tabs = listOf("Lifecycle", "แผนที่", "ค่างวด")
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
-            Text(
-                "ข้อสอบกลางภาค Android สมัยใหม่",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
+            Surface(color = MaterialTheme.colorScheme.primaryContainer) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
+                    Text(
+                        "ANDROID MODERN",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Midterm Workspace",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text("Lifecycle · State Hoisting · MVVM", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
             PrimaryTabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        text = { Text(title) }
+                        text = { Text(title, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) }
                     )
                 }
             }
@@ -124,112 +150,246 @@ private fun MidtermApp() {
 }
 
 @Composable
+private fun ScreenTitle(number: String, title: String, subtitle: String) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(number, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
 private fun LifecycleScreen() {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("ข้อ 1: Activity Lifecycle", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
-        Image(
-            painter = painterResource(R.drawable.student_photo),
-            contentDescription = "ภาพถ่ายนักศึกษา",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(220.dp).clip(CircleShape)
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "ทดลองเปิดแอป หมุนหน้าจอ หรือออกจากแอป แล้วสังเกต Toast ของแต่ละ Lifecycle",
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "onCreate() → onStart() → onResume()\nonPause() → onStop() → onDestroy()",
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium
-        )
+        ScreenTitle("ข้อ 1", "Activity Lifecycle", "ติดตามวงจรชีวิตของหน้าจอผ่าน Toast และ Logcat")
+        Spacer(Modifier.height(20.dp))
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            elevation = CardDefaults.cardElevation(3.dp)
+        ) {
+            Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    painter = painterResource(R.drawable.student_photo),
+                    contentDescription = "ภาพถ่ายนักศึกษา",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(210.dp).clip(CircleShape)
+                )
+                Spacer(Modifier.height(18.dp))
+                Text("กฤษฎา ศรีคิลิน", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("รหัสนักศึกษา 67102122111", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(18.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(18.dp))
+                Text("ลองหมุนหน้าจอเพื่อดู Lifecycle ทำงาน", textAlign = TextAlign.Center)
+                Spacer(Modifier.height(12.dp))
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(16.dp)) {
+                    Text(
+                        "onCreate → onStart → onResume\nonPause → onStop → onDestroy",
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }
 
-/** Stateful composable: owns saveable state and the map-launching logic. */
+/** Stateful composable: owns saveable input and map state. */
 @Composable
 private fun MapScreen() {
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
+    var mapLatitude by rememberSaveable { mutableStateOf("17.1899") }
+    var mapLongitude by rememberSaveable { mutableStateOf("104.0914") }
     val context = LocalContext.current
+
+    fun validatedCoordinates(): Pair<Double, Double>? {
+        val lat = latitude.toDoubleOrNull()
+        val lng = longitude.toDoubleOrNull()
+        val message = when {
+            lat == null || lng == null -> "กรุณากรอก Latitude และ Longitude ให้ครบถ้วน"
+            lat !in -90.0..90.0 || lng !in -180.0..180.0 -> "ค่าพิกัดไม่ถูกต้อง"
+            else -> null
+        }
+        if (message != null) {
+            Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return lat!! to lng!!
+    }
 
     CoordinateForm(
         latitude = latitude,
         longitude = longitude,
+        mapLatitude = mapLatitude,
+        mapLongitude = mapLongitude,
         onLatitudeChange = { latitude = it },
         onLongitudeChange = { longitude = it },
-        onOpenMap = {
-            val lat = latitude.toDoubleOrNull()
-            val lng = longitude.toDoubleOrNull()
-            if (lat == null || lng == null) {
-                Toast.makeText(context.applicationContext, "กรุณากรอก Latitude และ Longitude ให้ครบถ้วน", Toast.LENGTH_SHORT).show()
-                return@CoordinateForm
+        onShowMap = {
+            validatedCoordinates()?.let { (lat, lng) ->
+                mapLatitude = lat.toString()
+                mapLongitude = lng.toString()
             }
-            if (lat !in -90.0..90.0 || lng !in -180.0..180.0) {
-                Toast.makeText(context.applicationContext, "ค่าพิกัดไม่ถูกต้อง", Toast.LENGTH_SHORT).show()
-                return@CoordinateForm
-            }
-            val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng?q=$lat,$lng"))
-            if (mapIntent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(mapIntent)
-            } else {
-                Toast.makeText(context.applicationContext, "ไม่พบแอปพลิเคชันแผนที่", Toast.LENGTH_SHORT).show()
+        },
+        onOpenExternalMap = {
+            validatedCoordinates()?.let { (lat, lng) ->
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lng?q=$lat,$lng"))
+                if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
+                else Toast.makeText(context.applicationContext, "ไม่พบแอปแผนที่ภายนอก", Toast.LENGTH_SHORT).show()
             }
         }
     )
 }
 
-/** Stateless composable: renders values and reports user events only. */
+/** Stateless composable: renders values and sends events upward only. */
 @Composable
 private fun CoordinateForm(
     latitude: String,
     longitude: String,
+    mapLatitude: String,
+    mapLongitude: String,
     onLatitudeChange: (String) -> Unit,
     onLongitudeChange: (String) -> Unit,
-    onOpenMap: () -> Unit
+    onShowMap: () -> Unit,
+    onOpenExternalMap: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
-        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            "ข้อ 2: เปิดแผนที่ด้วย State Hoisting",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(20.dp))
-        OutlinedTextField(
-            value = latitude,
-            onValueChange = onLatitudeChange,
-            label = { Text("Latitude (ละติจูด)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = longitude,
-            onValueChange = onLongitudeChange,
-            label = { Text("Longitude (ลองจิจูด)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth()
-        )
+        ScreenTitle("ข้อ 2", "ค้นหาพิกัด", "ปักหมุดและดูแผนที่ได้ภายในแอป")
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onOpenMap, modifier = Modifier.fillMaxWidth()) { Text("เปิดแผนที่") }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = latitude,
+                        onValueChange = onLatitudeChange,
+                        label = { Text("Latitude") },
+                        placeholder = { Text("17.1899") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = longitude,
+                        onValueChange = onLongitudeChange,
+                        label = { Text("Longitude") },
+                        placeholder = { Text("104.0914") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = onShowMap, modifier = Modifier.fillMaxWidth()) { Text("แสดงตำแหน่งบนแผนที่") }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(310.dp).background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmbeddedMap(mapLatitude, mapLongitude)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("ตำแหน่งปัจจุบัน", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$mapLatitude, $mapLongitude", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(onClick = onOpenExternalMap) { Text("เปิดภายนอก") }
+                }
+            }
+        }
+        Spacer(Modifier.height(20.dp))
     }
 }
 
-/** View layer: state and calculations are delegated to the ViewModel. */
+@Composable
+private fun EmbeddedMap(latitude: String, longitude: String) {
+    val lat = latitude.toDouble()
+    val lng = longitude.toDouble()
+    val zoom = 15
+    val scale = 2.0.pow(zoom)
+    val latitudeRadians = lat.coerceIn(-85.0511, 85.0511) * PI / 180.0
+    val tileX = (lng + 180.0) / 360.0 * scale
+    val tileY = (1.0 - ln(tan(latitudeRadians) + 1.0 / cos(latitudeRadians)) / PI) / 2.0 * scale
+    val centerTileX = floor(tileX).toInt()
+    val centerTileY = floor(tileY).toInt()
+    val tiles = buildString {
+        for (y in centerTileY - 1..centerTileY + 1) {
+            for (x in centerTileX - 1..centerTileX + 1) {
+                val left = (x - tileX) * 256.0
+                val top = (y - tileY) * 256.0
+                append("<img class='tile' src='https://tile.openstreetmap.org/$zoom/$x/$y.png' style='left:calc(50% + ${left}px);top:calc(50% + ${top}px)'>")
+            }
+        }
+    }
+    val html = """
+        <!doctype html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+            <style>
+              html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#e8eef0}
+              .tile{position:absolute;width:256px;height:256px;max-width:none}
+              .marker{position:absolute;left:50%;top:50%;width:24px;height:24px;
+                margin:-24px 0 0 -12px;background:#d93025;border:3px solid white;
+                border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+                box-shadow:0 2px 6px #555}
+              .marker:after{content:'';position:absolute;width:8px;height:8px;left:5px;top:5px;
+                background:white;border-radius:50%}
+              .credit{position:absolute;right:4px;bottom:3px;background:rgba(255,255,255,.85);
+                color:#333;font:10px sans-serif;padding:2px 4px;border-radius:3px}
+            </style>
+          </head>
+          <body>$tiles<div class="marker"></div><div class="credit">© OpenStreetMap contributors</div></body>
+        </html>
+    """.trimIndent()
+    val mapKey = "$lat,$lng"
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { context ->
+            WebView(context).apply {
+                webViewClient = WebViewClient()
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                tag = mapKey
+                loadDataWithBaseURL("https://maps.google.com", html, "text/html", "UTF-8", null)
+            }
+        },
+        update = { webView ->
+            if (webView.tag != mapKey) {
+                webView.tag = mapKey
+                webView.loadDataWithBaseURL("https://maps.google.com", html, "text/html", "UTF-8", null)
+            }
+        }
+    )
+}
+
+/** View layer: all installment state and calculations are delegated to the ViewModel. */
 @Composable
 private fun InstallmentScreen(vm: InstallmentViewModel = viewModel()) {
     val state = vm.uiState
@@ -237,53 +397,70 @@ private fun InstallmentScreen(vm: InstallmentViewModel = viewModel()) {
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            "ข้อ 3: คำนวณค่างวดแบบ MVVM",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
+        ScreenTitle("ข้อ 3", "เครื่องคำนวณค่างวด", "วางแผนยอดผ่อนแบบดอกเบี้ยคงที่ด้วย MVVM")
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(
-            value = state.price,
-            onValueChange = vm::setPrice,
-            label = { Text("ราคาสินค้า (บาท)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(16.dp))
-        Text("อัตราดอกเบี้ยต่อเดือน: ${formatOneDecimal(state.monthlyRate)}%")
-        Slider(value = state.monthlyRate, onValueChange = vm::setRate, valueRange = 0f..5f, steps = 49)
-        Text("จำนวนเดือนในการผ่อน: ${state.months} เดือน")
-        Slider(
-            value = state.months.toFloat(),
-            onValueChange = { vm.setMonths(it.toInt()) },
-            valueRange = 1f..36f,
-            steps = 34
-        )
-        Button(
-            onClick = {
-                if (!vm.calculate()) {
-                    Toast.makeText(context.applicationContext, "กรุณากรอกราคาสินค้าให้ถูกต้อง", Toast.LENGTH_SHORT).show()
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("คำนวณ") }
-        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Column(Modifier.padding(18.dp)) {
+                OutlinedTextField(
+                    value = state.price,
+                    onValueChange = vm::setPrice,
+                    label = { Text("ราคาสินค้า") },
+                    suffix = { Text("บาท") },
+                    placeholder = { Text("เช่น 12000") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(20.dp))
+                Text("อัตราดอกเบี้ยต่อเดือน", style = MaterialTheme.typography.labelLarge)
+                Text("${formatOneDecimal(state.monthlyRate)}%", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Slider(value = state.monthlyRate, onValueChange = vm::setRate, valueRange = 0f..5f, steps = 49)
+                Spacer(Modifier.height(8.dp))
+                Text("ระยะเวลาผ่อน", style = MaterialTheme.typography.labelLarge)
+                Text("${state.months} เดือน", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Slider(value = state.months.toFloat(), onValueChange = { vm.setMonths(it.toInt()) }, valueRange = 1f..36f, steps = 34)
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        if (!vm.calculate()) Toast.makeText(context.applicationContext, "กรุณากรอกราคาสินค้าให้ถูกต้อง", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("คำนวณค่างวด") }
+            }
+        }
         state.result?.let { result ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ผลการคำนวณ", fontWeight = FontWeight.Bold)
-                    Text("ค่างวดต่อเดือน: ${money(result.monthlyPayment)} บาท")
-                    Text("ยอดรวมที่ต้องจ่ายจริง: ${money(result.totalPayment)} บาท")
-                    Text("ยอดดอกเบี้ยทั้งหมด: ${money(result.totalInterest)} บาท")
+            Spacer(Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("สรุปยอดชำระ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("ค่างวดต่อเดือน", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${money(result.monthlyPayment)} บาท", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    HorizontalDivider()
+                    ResultRow("ยอดรวมที่ต้องจ่าย", "${money(result.totalPayment)} บาท")
+                    ResultRow("ดอกเบี้ยทั้งหมด", "${money(result.totalInterest)} บาท")
                 }
             }
         }
+        Spacer(Modifier.height(20.dp))
+    }
+}
+
+@Composable
+private fun ResultRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label)
+        Text(value, fontWeight = FontWeight.Bold)
     }
 }
 
