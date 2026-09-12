@@ -58,6 +58,11 @@ class MainActivity : ComponentActivity() {
         setContent { MyApplicationTheme { MidtermApp() } }
     }
 
+    override fun onStart() {
+        super.onStart()
+        showLifecycleToast("onStart()")
+    }
+
     private fun showLifecycleToast(methodName: String) {
         Toast.makeText(applicationContext, methodName, Toast.LENGTH_SHORT).show()
     }
