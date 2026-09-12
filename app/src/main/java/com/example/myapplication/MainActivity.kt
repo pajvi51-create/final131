@@ -78,6 +78,11 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 
+    override fun onDestroy() {
+        showLifecycleToast("onDestroy()")
+        super.onDestroy()
+    }
+
     private fun showLifecycleToast(methodName: String) {
         Toast.makeText(applicationContext, methodName, Toast.LENGTH_SHORT).show()
     }
