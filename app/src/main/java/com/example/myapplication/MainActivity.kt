@@ -4,8 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -59,7 +57,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.util.Locale
@@ -248,6 +245,11 @@ private fun MapScreen() {
         return if (error == null) lat!! to lng!! else null
     }
 
+    fun openGoogleMaps(lat: Double, lng: Double) {
+        val url = "https://www.google.com/maps/search/?api=1&query=$lat%2C$lng"
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -261,28 +263,39 @@ private fun MapScreen() {
                     CoordinateField(longitude, { longitude = it }, "Longitude", "104.0914", Modifier.weight(1f))
                 }
                 Button(
-                    onClick = { coordinates()?.let { (lat, lng) -> mapLatitude = lat.toString(); mapLongitude = lng.toString() } },
+                    onClick = { coordinates()?.let { (lat, lng) ->
+                        mapLatitude = lat.toString()
+                        mapLongitude = lng.toString()
+                        openGoogleMaps(lat, lng)
+                    } },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(17.dp)
-                ) { Text("🚀  เดินทางไปยังพิกัด") }
+                ) { Text("📍  ดูสถานที่ใน Google Maps") }
                 Text("Latitude −90 ถึง 90  •  Longitude −180 ถึง 180", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
         Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), elevation = CardDefaults.cardElevation(5.dp)) {
             Column {
-                Box(Modifier.fillMaxWidth().height(320.dp).background(MaterialTheme.colorScheme.surfaceVariant)) { EmbeddedMap(mapLatitude, mapLongitude) }
+                Box(
+                    Modifier.fillMaxWidth().height(250.dp).background(MaterialTheme.colorScheme.secondaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("🗺️", style = MaterialTheme.typography.displaySmall)
+                        Text("Google Maps", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                        Text("เปิดดูชื่อสถานที่ ถนน และจุดสำคัญรอบพิกัด", color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                }
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("ดาวที่เลือก", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Text("$mapLatitude, $mapLongitude", style = MaterialTheme.typography.titleLarge)
                     OutlinedButton(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$mapLatitude,$mapLongitude?q=$mapLatitude,$mapLongitude"))
-                            if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
-                            else Toast.makeText(context, "ไม่พบแอปแผนที่", Toast.LENGTH_SHORT).show()
+                            openGoogleMaps(mapLatitude.toDouble(), mapLongitude.toDouble())
                         },
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)
-                    ) { Text("เปิดด้วยแอปแผนที่") }
+                    ) { Text("เปิดสถานที่ใน Google Maps") }
                 }
             }
         }
@@ -297,33 +310,6 @@ private fun CoordinateField(value: String, onValueChange: (String) -> Unit, labe
         label = { Text(label) }, placeholder = { Text(placeholder) },
         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         shape = RoundedCornerShape(18.dp), modifier = modifier
-    )
-}
-
-@Composable
-private fun EmbeddedMap(latitude: String, longitude: String) {
-    val lat = latitude.toDouble()
-    val lng = longitude.toDouble()
-    val html = """
-        <!doctype html><html><head>
-        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-        <link rel="stylesheet" href="leaflet/leaflet.css">
-        <style>html,body,#map{width:100%;height:100%;margin:0;background:#f4edff}.leaflet-control-zoom a{color:#5b2aae!important}</style>
-        </head><body><div id="map"></div><script src="leaflet/leaflet.js"></script><script>
-        const position=[$lat,$lng];const map=L.map('map').setView(position,16);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
-        L.marker(position).addTo(map).bindPopup('ดาวปลายทาง<br>$lat, $lng').openPopup();
-        setTimeout(()=>map.invalidateSize(),250);</script></body></html>
-    """.trimIndent()
-    val key = "$lat,$lng"
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context -> WebView(context).apply {
-            webViewClient = object : WebViewClient() { override fun onPageFinished(view: WebView, url: String?) { view.postDelayed({ view.evaluateJavascript("map.invalidateSize(true)", null) }, 500) } }
-            settings.javaScriptEnabled = true; settings.domStorageEnabled = true; tag = key
-            loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null)
-        } },
-        update = { if (it.tag != key) { it.tag = key; it.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null) } }
     )
 }
 
