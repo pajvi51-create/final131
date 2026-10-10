@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.expense
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -81,7 +85,7 @@ fun ExpenseTrackerScreen(
 }
 
 /**
- * Stateless Composable - แสดงผล UI ล้วนๆ ตามหลัก State Hoisting
+ * Stateless Composable - แสดงผล UI ล้วนๆ พร้อมรองรับ Adaptive Landscape
  */
 @Composable
 fun ExpenseTrackerContent(
@@ -92,167 +96,264 @@ fun ExpenseTrackerContent(
     onSaveClicked: () -> Unit,
     onClearClicked: () -> Unit
 ) {
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // หัวข้อหน้าจอ
-            Text(
-                text = "ระบบบันทึกรายรับ-รายจ่าย (.CSV)",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            // 1. การ์ดสรุปยอดเงินคงเหลือสุทธิ (Net Balance Card)
-            NetBalanceCard(
-                totalIncome = uiState.totalIncome,
-                totalExpense = uiState.totalExpense,
-                netBalance = uiState.netBalance
-            )
-
-            // 2. ฟอร์มป้อนข้อมูล (Input Form)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        if (isLandscape) {
+            // Layout สองคอลัมน์สำหรับแนวนอน (Landscape)
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // ฝั่งซ้าย: สรุปยอด และ ฟอร์มกรอกข้อมูล (Scrollable)
                 Column(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "กรอกข้อมูลรายการใหม่",
+                        text = "ระบบบันทึกรายรับ-รายจ่าย (.CSV)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    NetBalanceCard(
+                        totalIncome = uiState.totalIncome,
+                        totalExpense = uiState.totalExpense,
+                        netBalance = uiState.netBalance
+                    )
+
+                    ExpenseInputForm(
+                        uiState = uiState,
+                        onNameChanged = onNameChanged,
+                        onAmountChanged = onAmountChanged,
+                        onTypeChanged = onTypeChanged,
+                        onSaveClicked = onSaveClicked,
+                        onClearClicked = onClearClicked
+                    )
+                }
+
+                // ฝั่งขวา: รายการประวัติย้อนหลัง (LazyColumn)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "ประวัติรายการ (${uiState.items.size} รายการ)",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    OutlinedTextField(
-                        value = uiState.nameInput,
-                        onValueChange = onNameChanged,
-                        label = { Text("ชื่อรายการ") },
-                        placeholder = { Text("เช่น ค่าอาหาร, เงินเดือน") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = uiState.amountInput,
-                        onValueChange = onAmountChanged,
-                        label = { Text("จำนวนเงิน (บาท)") },
-                        placeholder = { Text("0.00") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true
-                    )
-
-                    // เลือกประเภทรายการ (RadioButton)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Text(
-                            text = "ประเภท:",
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(end = 12.dp)
-                        )
-
-                        TransactionType.entries.forEach { type ->
-                            Row(
-                                modifier = Modifier
-                                    .selectable(
-                                        selected = (uiState.typeInput == type),
-                                        onClick = { onTypeChanged(type) },
-                                        role = Role.RadioButton
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = (uiState.typeInput == type),
-                                    onClick = null
-                                )
-                                Text(
-                                    text = type.displayName,
-                                    modifier = Modifier.padding(start = 2.dp),
-                                    color = if (type == TransactionType.INCOME) Color(0xFF2E7D32) else Color(0xFFC62828)
-                                )
+                    if (uiState.items.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "ยังไม่มีข้อมูลบันทึกในไฟล์ CSV",
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(
+                                items = uiState.items,
+                                key = { "${it.date}_${it.time}_${it.name}_${it.amount}" }
+                            ) { item ->
+                                ExpenseItemCard(item = item)
                             }
                         }
                     }
+                }
+            }
+        } else {
+            // Layout สแตกแนวตั้งสำหรับแนวตั้ง (Portrait)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "ระบบบันทึกรายรับ-รายจ่าย (.CSV)",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-                    // ปุ่มสั่งการ (Save & Clear)
-                    Row(
+                NetBalanceCard(
+                    totalIncome = uiState.totalIncome,
+                    totalExpense = uiState.totalExpense,
+                    netBalance = uiState.netBalance
+                )
+
+                ExpenseInputForm(
+                    uiState = uiState,
+                    onNameChanged = onNameChanged,
+                    onAmountChanged = onAmountChanged,
+                    onTypeChanged = onTypeChanged,
+                    onSaveClicked = onSaveClicked,
+                    onClearClicked = onClearClicked
+                )
+
+                AnimatedVisibility(visible = uiState.isLoading) {
+                    Box(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            onClick = onSaveClicked,
-                            modifier = Modifier.weight(1f),
-                            enabled = !uiState.isLoading
-                        ) {
-                            Text("บันทึกข้อมูล")
-                        }
+                        CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                    }
+                }
 
-                        OutlinedButton(
-                            onClick = onClearClicked,
-                            modifier = Modifier.weight(1f),
-                            enabled = !uiState.isLoading,
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text("ล้างข้อมูล")
+                Text(
+                    text = "ประวัติรายการ (${uiState.items.size} รายการ)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (uiState.items.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "ยังไม่มีข้อมูลบันทึกในไฟล์ CSV",
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = uiState.items,
+                            key = { "${it.date}_${it.time}_${it.name}_${it.amount}" }
+                        ) { item ->
+                            ExpenseItemCard(item = item)
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            // แสดง Loading Indicator ถ้ามี
-            AnimatedVisibility(visible = uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.padding(4.dp))
-                }
-            }
-
-            // 3. รายการประวัติย้อนหลัง (LazyColumn)
+/**
+ * ฟอร์มป้อนข้อมูลรายรับ-รายจ่าย
+ */
+@Composable
+private fun ExpenseInputForm(
+    uiState: ExpenseUiState,
+    onNameChanged: (String) -> Unit,
+    onAmountChanged: (String) -> Unit,
+    onTypeChanged: (TransactionType) -> Unit,
+    onSaveClicked: () -> Unit,
+    onClearClicked: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text(
-                text = "ประวัติรายการ (${uiState.items.size} รายการ)",
+                text = "กรอกข้อมูลรายการใหม่",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            if (uiState.items.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "ยังไม่มีข้อมูลบันทึกในไฟล์ CSV",
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        items = uiState.items,
-                        key = { "${it.date}_${it.time}_${it.name}_${it.amount}" }
-                    ) { item ->
-                        ExpenseItemCard(item = item)
+            OutlinedTextField(
+                value = uiState.nameInput,
+                onValueChange = onNameChanged,
+                label = { Text("ชื่อรายการ") },
+                placeholder = { Text("เช่น ค่าอาหาร, เงินเดือน") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = uiState.amountInput,
+                onValueChange = onAmountChanged,
+                label = { Text("จำนวนเงิน (บาท)") },
+                placeholder = { Text("0.00") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(
+                    text = "ประเภท:",
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
+
+                TransactionType.entries.forEach { type ->
+                    Row(
+                        modifier = Modifier
+                            .selectable(
+                                selected = (uiState.typeInput == type),
+                                onClick = { onTypeChanged(type) },
+                                role = Role.RadioButton
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (uiState.typeInput == type),
+                            onClick = null
+                        )
+                        Text(
+                            text = type.displayName,
+                            modifier = Modifier.padding(start = 2.dp),
+                            color = if (type == TransactionType.INCOME) Color(0xFF2E7D32) else Color(0xFFC62828)
+                        )
                     }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onSaveClicked,
+                    modifier = Modifier.weight(1f),
+                    enabled = !uiState.isLoading
+                ) {
+                    Text("บันทึกข้อมูล")
+                }
+
+                OutlinedButton(
+                    onClick = onClearClicked,
+                    modifier = Modifier.weight(1f),
+                    enabled = !uiState.isLoading,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("ล้างข้อมูล")
                 }
             }
         }

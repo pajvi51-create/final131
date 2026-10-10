@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.stock
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
@@ -12,8 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,7 +86,7 @@ fun ProductStockScreen(
 }
 
 /**
- * Stateless Composable - แสดงผล UI ล้วนๆ ตามหลัก State Hoisting
+ * Stateless Composable - แสดงผล UI ล้วนๆ พร้อมรองรับ Adaptive Landscape
  */
 @Composable
 fun ProductStockContent(
@@ -99,208 +103,427 @@ fun ProductStockContent(
     onDeleteClicked: (Long) -> Unit
 ) {
     var showConfigPanel by remember { mutableStateOf(uiState.supabaseUrl.isBlank() || uiState.supabaseAnonKey.isBlank()) }
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // หัวข้อหน้าจอ
+        if (isLandscape) {
+            // Layout สองคอลัมน์สำหรับแนวนอน (Landscape)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "ระบบสต็อกสินค้าชุมชน (Supabase)",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                OutlinedButton(
-                    onClick = { showConfigPanel = !showConfigPanel }
+                // ฝั่งซ้าย: ฟอร์มตั้งค่า และ เพิ่มสินค้า (Scrollable)
+                Column(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(if (showConfigPanel) "ซ่อนตั้งค่า" else "ตั้งค่า Cloud")
-                }
-            }
-
-            // 1. ส่วนตั้งค่า Supabase Connection
-            AnimatedVisibility(visible = showConfigPanel) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "ตั้งค่าการเชื่อมต่อ Supabase Database",
-                            style = MaterialTheme.typography.titleSmall,
+                            text = "ระบบสต็อกสินค้าชุมชน (Supabase)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        OutlinedButton(
+                            onClick = { showConfigPanel = !showConfigPanel }
+                        ) {
+                            Text(if (showConfigPanel) "ซ่อนตั้งค่า" else "ตั้งค่า Cloud")
+                        }
+                    }
+
+                    // 1. ส่วนตั้งค่า Supabase Connection
+                    AnimatedVisibility(visible = showConfigPanel) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "ตั้งค่าการเชื่อมต่อ Supabase Database",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.supabaseUrl,
+                                    onValueChange = onUrlChanged,
+                                    label = { Text("Supabase URL") },
+                                    placeholder = { Text("https://your-project.supabase.co") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.supabaseAnonKey,
+                                    onValueChange = onAnonKeyChanged,
+                                    label = { Text("Supabase Anon Key") },
+                                    placeholder = { Text("eyJhbGciOi...") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                Button(
+                                    onClick = onLoadClicked,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !uiState.isLoading
+                                ) {
+                                    Text("เชื่อมต่อและโหลดรายการสินค้า (Read)")
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. ฟอร์มเพิ่มสินค้าใหม่ (Create)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "เพิ่มรายการสินค้าใหม่ (Create)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            OutlinedTextField(
+                                value = uiState.nameInput,
+                                onValueChange = onNameChanged,
+                                label = { Text("ชื่อสินค้า") },
+                                placeholder = { Text("เช่น ข้าวฮักเมือง, ผ้าทอมือ") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = uiState.qtyInput,
+                                    onValueChange = onQtyChanged,
+                                    label = { Text("จำนวน (ชิ้น)") },
+                                    placeholder = { Text("0") },
+                                    modifier = Modifier.weight(1f),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.priceInput,
+                                    onValueChange = onPriceChanged,
+                                    label = { Text("ราคา (บาท)") },
+                                    placeholder = { Text("0.00") },
+                                    modifier = Modifier.weight(1f),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    singleLine = true
+                                )
+                            }
+
+                            Button(
+                                onClick = onAddClicked,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Text("บันทึกเพิ่มสินค้าขึ้น Cloud")
+                            }
+                        }
+                    }
+                }
+
+                // ฝั่งขวา: รายการสินค้าทั้งหมดในระบบ (Read, Update, Delete)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "คลังสินค้าชุมชน (${uiState.products.size} รายการ)",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
 
-                        OutlinedTextField(
-                            value = uiState.supabaseUrl,
-                            onValueChange = onUrlChanged,
-                            label = { Text("Supabase URL") },
-                            placeholder = { Text("https://your-project.supabase.co") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-
-                        OutlinedTextField(
-                            value = uiState.supabaseAnonKey,
-                            onValueChange = onAnonKeyChanged,
-                            label = { Text("Supabase Anon Key") },
-                            placeholder = { Text("eyJhbGciOi...") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-
-                        Button(
+                        OutlinedButton(
                             onClick = onLoadClicked,
-                            modifier = Modifier.fillMaxWidth(),
                             enabled = !uiState.isLoading
                         ) {
-                            Text("เชื่อมต่อและโหลดรายการสินค้า (Read)")
+                            Text("รีเฟรช")
+                        }
+                    }
+
+                    AnimatedVisibility(visible = uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                Text("กำลังสื่อสารกับ Supabase...", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+
+                    if (uiState.products.isEmpty() && !uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "ไม่พบรายการสินค้าในระบบ\n(ใส่ URL/Key แล้วกดโหลดรายการ)",
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(
+                                items = uiState.products,
+                                key = { it.id ?: it.productName }
+                            ) { product ->
+                                ProductStockCard(
+                                    product = product,
+                                    onIncreaseClicked = { onIncreaseClicked(product) },
+                                    onDecreaseClicked = { onDecreaseClicked(product) },
+                                    onDeleteClicked = { product.id?.let { id -> onDeleteClicked(id) } }
+                                )
+                            }
                         }
                     }
                 }
             }
-
-            // 2. ฟอร์มเพิ่มสินค้าใหม่ (Create)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        } else {
+            // Layout สต๊อกแนวตั้งสำหรับแนวตั้ง (Portrait)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                // หัวข้อหน้าจอ
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "เพิ่มรายการสินค้าใหม่ (Create)",
+                        text = "ระบบสต็อกสินค้าชุมชน (Supabase)",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    OutlinedButton(
+                        onClick = { showConfigPanel = !showConfigPanel }
+                    ) {
+                        Text(if (showConfigPanel) "ซ่อนตั้งค่า" else "ตั้งค่า Cloud")
+                    }
+                }
+
+                // 1. ส่วนตั้งค่า Supabase Connection
+                AnimatedVisibility(visible = showConfigPanel) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "ตั้งค่าการเชื่อมต่อ Supabase Database",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            OutlinedTextField(
+                                value = uiState.supabaseUrl,
+                                onValueChange = onUrlChanged,
+                                label = { Text("Supabase URL") },
+                                placeholder = { Text("https://your-project.supabase.co") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = uiState.supabaseAnonKey,
+                                onValueChange = onAnonKeyChanged,
+                                label = { Text("Supabase Anon Key") },
+                                placeholder = { Text("eyJhbGciOi...") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+
+                            Button(
+                                onClick = onLoadClicked,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Text("เชื่อมต่อและโหลดรายการสินค้า (Read)")
+                            }
+                        }
+                    }
+                }
+
+                // 2. ฟอร์มเพิ่มสินค้าใหม่ (Create)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "เพิ่มรายการสินค้าใหม่ (Create)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.nameInput,
+                            onValueChange = onNameChanged,
+                            label = { Text("ชื่อสินค้า") },
+                            placeholder = { Text("เช่น ข้าวฮักเมือง, ผ้าทอมือ") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.qtyInput,
+                                onValueChange = onQtyChanged,
+                                label = { Text("จำนวน (ชิ้น)") },
+                                placeholder = { Text("0") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = uiState.priceInput,
+                                onValueChange = onPriceChanged,
+                                label = { Text("ราคา (บาท)") },
+                                placeholder = { Text("0.00") },
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                singleLine = true
+                            )
+                        }
+
+                        Button(
+                            onClick = onAddClicked,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !uiState.isLoading
+                        ) {
+                            Text("บันทึกเพิ่มสินค้าขึ้น Cloud")
+                        }
+                    }
+                }
+
+                // Loading Bar
+                AnimatedVisibility(visible = uiState.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            Text("กำลังสื่อสารกับ Supabase...", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+
+                // 3. รายการสินค้าทั้งหมดในระบบ (Read, Update, Delete)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "คลังสินค้าชุมชน (${uiState.products.size} รายการ)",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    OutlinedTextField(
-                        value = uiState.nameInput,
-                        onValueChange = onNameChanged,
-                        label = { Text("ชื่อสินค้า") },
-                        placeholder = { Text("เช่น ข้าวฮักเมือง, ผ้าทอมือ") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.qtyInput,
-                            onValueChange = onQtyChanged,
-                            label = { Text("จำนวน (ชิ้น)") },
-                            placeholder = { Text("0") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true
-                        )
-
-                        OutlinedTextField(
-                            value = uiState.priceInput,
-                            onValueChange = onPriceChanged,
-                            label = { Text("ราคา (บาท)") },
-                            placeholder = { Text("0.00") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true
-                        )
-                    }
-
-                    Button(
-                        onClick = onAddClicked,
-                        modifier = Modifier.fillMaxWidth(),
+                    OutlinedButton(
+                        onClick = onLoadClicked,
                         enabled = !uiState.isLoading
                     ) {
-                        Text("บันทึกเพิ่มสินค้าขึ้น Cloud")
+                        Text("รีเฟรช")
                     }
                 }
-            }
 
-            // Loading Bar
-            AnimatedVisibility(visible = uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                if (uiState.products.isEmpty() && !uiState.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        Text("กำลังสื่อสารกับ Supabase...", style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-
-            // 3. รายการสินค้าทั้งหมดในระบบ (Read, Update, Delete)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "คลังสินค้าชุมชน (${uiState.products.size} รายการ)",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                OutlinedButton(
-                    onClick = onLoadClicked,
-                    enabled = !uiState.isLoading
-                ) {
-                    Text("รีเฟรช")
-                }
-            }
-
-            if (uiState.products.isEmpty() && !uiState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "ไม่พบรายการสินค้าในระบบ\n(กรุณากด 'ตั้งค่า Cloud' ใส่ URL/Key หรือกดเพิ่มสินค้า)",
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        items = uiState.products,
-                        key = { it.id ?: it.productName }
-                    ) { product ->
-                        ProductStockCard(
-                            product = product,
-                            onIncreaseClicked = { onIncreaseClicked(product) },
-                            onDecreaseClicked = { onDecreaseClicked(product) },
-                            onDeleteClicked = { product.id?.let { id -> onDeleteClicked(id) } }
+                        Text(
+                            text = "ไม่พบรายการสินค้าในระบบ\n(กรุณากด 'ตั้งค่า Cloud' ใส่ URL/Key หรือกดเพิ่มสินค้า)",
+                            color = MaterialTheme.colorScheme.outline
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = uiState.products,
+                            key = { it.id ?: it.productName }
+                        ) { product ->
+                            ProductStockCard(
+                                product = product,
+                                onIncreaseClicked = { onIncreaseClicked(product) },
+                                onDecreaseClicked = { onDecreaseClicked(product) },
+                                onDeleteClicked = { product.id?.let { id -> onDeleteClicked(id) } }
+                            )
+                        }
                     }
                 }
             }
