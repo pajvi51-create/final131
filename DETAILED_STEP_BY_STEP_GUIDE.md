@@ -1,4 +1,7 @@
 # คู่มือการพัฒนาอย่างละเอียดและรายการไฟล์สำหรับส่งอาจารย์ (Final Exam Guide)
+**นักศึกษา**: ปาจรีย์ สุคนธชาติ
+**รหัสนักศึกษา**: 67102122131
+**Git Repository**: `https://github.com/pajvi51-create/final131.git`
 
 ---
 
@@ -95,4 +98,5 @@
 ### 4. ไฟล์คู่มือและเอกสารประกอบ (Documentation Files)
 - 📝 `README.md` (ไฟล์แรกบน GitHub)
 - 📝 `README_FINAL_EXAM.md` (คู่มือการใช้งานและคำอธิบายฉบับเต็ม)
+- 📝 `DETAILED_STEP_BY_STEP_GUIDE.md` (คู่มือการพัฒนาอย่างละเอียด)
 - 📝 `submission/README_ส่งงาน.md` (เอกสารสรุปส่งงานภาษาไทย)

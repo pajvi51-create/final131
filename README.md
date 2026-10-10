@@ -1,4 +1,7 @@
 # final131 - รายงานและซอร์สโค้ดข้อสอบไฟนอล Android
+**นักศึกษา**: ปาจรีย์ สุคนธชาติ
+**รหัสนักศึกษา**: 67102122131
+**Git Repository**: `https://github.com/pajvi51-create/final131.git`
 
 โปรเจกต์นี้เป็นซอร์สโค้ดฉบับสมบูรณ์สำหรับข้อสอบไฟนอลวิชาการพัฒนาแอปพลิเคชัน Android (Kotlin / MVVM / Compose)
 
@@ -10,4 +13,5 @@
 
 ## 📖 เอกสารและคู่มือการใช้งาน (Documentation & User Manual)
 - อ่านคู่มือการใช้งานและคำอธิบายการทดสอบฉบับเต็มได้ที่: **[README_FINAL_EXAM.md](README_FINAL_EXAM.md)**
+- เอกสารคู่มือการพัฒนาอย่างละเอียด: **[DETAILED_STEP_BY_STEP_GUIDE.md](DETAILED_STEP_BY_STEP_GUIDE.md)**
 - เอกสารสรุปการส่งงานภาษาไทย: **[submission/README_ส่งงาน.md](submission/README_ส่งงาน.md)**
